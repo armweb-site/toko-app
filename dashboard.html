@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Toko</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 15px; background: #fafafa; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .cards { display: flex; gap: 10px; margin: 15px 0; }
+        .card { flex: 1; background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; }
+        .section { background: white; padding: 15px; margin-bottom: 20px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        input, select, button { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; }
+        .btn-danger { background: #dc3545; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 14px; }
+        th { background: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Dashboard Toko</h2>
+        <a href="/logout"><button class="btn-danger" style="width: auto;">Logout</button></a>
+    </div>
+
+    <!-- Summary Ringkasan -->
+    <div class="cards">
+        <div class="card">
+            <h4>Total Penjualan</h4>
+            <p id="totalPenjualan">Rp 0</p>
+        </div>
+        <div class="card">
+            <h4>Total Pengeluaran</h4>
+            <p id="totalPengeluaran">Rp 0</p>
+        </div>
+    </div>
+
+    <!-- Form Penjualan (Stok Keluar Otomatis) -->
+    <div class="section">
+        <h3>Input Penjualan (Stok Keluar Otomatis)</h3>
+        <form action="/api/penjualan" method="POST">
+            <select name="barang_id" id="selectBarang" required>
+                <!-- Diaisikan via JavaScript -->
+            </select>
+            <input type="number" name="jumlah" placeholder="Jumlah Terjual" required>
+            <button type="submit">Proses Transaksi</button>
+        </form>
+    </div>
+
+    <!-- Form Tambah Stok / Barang (Stok Masuk Otomatis) -->
+    <div class="section">
+        <h3>Tambah Barang / Stok Masuk</h3>
+        <form action="/api/barang/tambah" method="POST">
+            <input type="text" name="nama_barang" placeholder="Nama Barang" required>
+            <input type="number" name="harga_jual" placeholder="Harga Jual Satuan" required>
+            <input type="number" name="jumlah" placeholder="Jumlah Stok Masuk" required>
+            <button type="submit">Tambah / Update Stok</button>
+        </form>
+    </div>
+
+    <!-- Form Input Pengeluaran -->
+    <div class="section">
+        <h3>Input Pengeluaran Operasional</h3>
+        <form action="/api/pengeluaran" method="POST">
+            <input type="text" name="keterangan" placeholder="Keterangan Pengeluaran" required>
+            <input type="number" name="jumlah_biaya" placeholder="Jumlah Biaya (Rp)" required>
+            <button type="submit">Simpan Pengeluaran</button>
+        </form>
+    </div>
+
+    <!-- Tabel Riwayat Stok Keluar-Masuk Otomatis -->
+    <div class="section">
+        <h3>Log Riwayat Stok Keluar-Masuk</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Waktu</th>
+                    <th>Barang</th>
+                    <th>Tipe</th>
+                    <th>Jumlah</th>
+                    <th>Keterangan</th>
+                </tr>
+            </thead>
+            <tbody id="tabelLogStok"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // Load data ringkasan dashboard
+        fetch('/api/dashboard-summary')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('totalPenjualan').innerText = 'Rp ' + data.totalPenjualan.toLocaleString();
+                document.getElementById('totalPengeluaran').innerText = 'Rp ' + data.totalPengeluaran.toLocaleString();
+            });
+
+        // Load dropdown barang
+        fetch('/api/barang')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById('selectBarang');
+                select.innerHTML = '<option value="">-- Pilih Barang --</option>';
+                data.forEach(item => {
+                    select.innerHTML += `<option value="${item.id}">${item.nama_barang} (Stok: ${item.stok}) - Rp ${item.harga_jual}</option>`;
+                });
+            });
+
+        // Load Log Stok Keluar-Masuk
+        fetch('/api/log-stok')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('tabelLogStok');
+                tbody.innerHTML = '';
+                data.forEach(log => {
+                    const warna = log.tipe === 'MASUK' ? 'green' : 'red';
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${new Date(log.tanggal).toLocaleString('id-ID')}</td>
+                            <td>${log.nama_barang}</td>
+                            <td style="color: ${warna}; font-weight: bold;">${log.tipe}</td>
+                            <td>${log.jumlah}</td>
+                            <td>${log.keterangan}</td>
+                        </tr>
+                    `;
+                });
+            });
+    </script>
+</body>
+</html>
